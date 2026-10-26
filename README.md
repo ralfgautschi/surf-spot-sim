@@ -1,5 +1,7 @@
 # surf-spot-sim
 
+Live app: https://ralfgautschi.github.io/surf-spot-sim/
+
 Per-spot wave simulation for Praia da Luz (Algarve): **Fortaleza**, **Chico Times** and **Rocha Negra**.
 The offshore forecast is carried over the real seabed to each spot (ray tracing, shoaling, breaking) and animated.
 
