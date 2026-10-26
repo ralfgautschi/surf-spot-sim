@@ -22,7 +22,7 @@ RAW = ROOT / "data" / "raw"
 
 ORIGIN = (37.085, -8.725)  # lat, lon of the local grid origin (Luz beach)
 Z0_LAT_BELOW_MSL = 2.0  # m; assumed MSL - LAT offset at Lagos, used by the simulation
-EXTENT = dict(xmin=-14_000, xmax=9_000, ymin=-12_000, ymax=2_500)  # m
+EXTENT = dict(xmin=-30_000, xmax=9_000, ymin=-16_000, ymax=4_000)  # m
 DX = 25.0  # m
 
 M_PER_DEG_LAT = 111_320.0

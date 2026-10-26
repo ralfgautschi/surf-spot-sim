@@ -36,7 +36,7 @@ def bathymetry_and_spots():
     ax1 = fig.add_subplot(2, 2, 1)
     ax2 = fig.add_subplot(2, 2, 2)
     ax3 = fig.add_subplot(2, 1, 2)
-    m = _bathy(ax1, g, (-14000, 9000), (-12000, 2500))
+    m = _bathy(ax1, g, (-30000, 9000), (-16000, 4000))
     ax1.set_title("Merged bathymetry (EMODnet DTM 2022 + 2011 LiDAR), m above LAT")
     _bathy(ax2, g, (-1500, 2000), (-1200, 700))
     ax2.set_title("Luz beach and spot pins")
@@ -67,5 +67,51 @@ def bathymetry_and_spots():
     fig.savefig(IMG / "bathymetry_spots.png", dpi=100, bbox_inches="tight")
 
 
+def _load_rm(spot_id: str, T: int) -> dict:
+    t = json.loads((ROOT / "web" / "public" / "data" / "transfer" / f"{spot_id}.json").read_text())
+    p = next(p for p in t["periods"] if p["T"] == T)
+    f = lambda a: np.array([np.nan if v is None else v for v in a], dtype=float)  # noqa: E731
+    return {"local": f(p["local"]), "offshore": f(p["offshore"]), "ratio": f(p["ratio"])}
+
+
+def transfer_and_rays():
+    from raytrace import SpeedField, trace
+    from transfer import apply, spread_deg
+
+    g = Grid.load()
+    spots = json.loads((ROOT / "web" / "public" / "data" / "spots.json").read_text())["spots"]
+    fig, axs = plt.subplots(2, 2, figsize=(16, 12))
+    dirs = np.arange(150, 300, 2.5)
+    for ax, T in zip(axs[0], (8, 14)):
+        for sp in spots:
+            rm = _load_rm(sp["id"], T)
+            K = [apply(rm, d, spread_deg(T))[0] for d in dirs]
+            ax.plot(dirs, K, color=COLORS[sp["id"]], label=sp["name"])
+        ax.set_title(f"Height factor at 10 m depth vs offshore swell direction, T={T} s")
+        ax.set_xlabel("offshore swell direction (from, °)")
+        ax.set_ylabel("Hs at spot / Hs offshore")
+        ax.axvspan(255, 300, color="grey", alpha=0.1)
+        ax.text(258, 0.05, "W–NW", color="grey")
+        ax.grid(alpha=0.3)
+        ax.legend()
+    smooth = g.smoothed(75.0)
+    for ax, (T, d) in zip(axs[1], ((12, 200), (14, 250))):
+        _bathy(ax, g, (-6000, 8000), (-9000, 1500))
+        f = SpeedField(float(T), smooth)
+        for sp in spots:
+            rm = _load_rm(sp["id"], T)
+            # show only rays that carry this swell (offshore direction within ±20°)
+            dd = (rm["offshore"] - d + 180) % 360 - 180
+            sel = rm["local"][np.isfinite(dd) & (np.abs(dd) < 20)][::3]
+            if sel.size:
+                r = trace(f, sp["ref"]["x"], sp["ref"]["y"], sel, keep_path=True)
+                for p in r["paths"]:
+                    ax.plot(p[:, 0], p[:, 1], color=COLORS[sp["id"]], lw=0.6, alpha=0.8)
+            ax.plot(sp["ref"]["x"], sp["ref"]["y"], "o", color=COLORS[sp["id"]], mec="w")
+        ax.set_title(f"Rays feeding each spot from a {d}° swell, T={T} s")
+    fig.savefig(IMG / "transfer_rays.png", dpi=90, bbox_inches="tight")
+
+
 if __name__ == "__main__":
     bathymetry_and_spots()
+    transfer_and_rays()
