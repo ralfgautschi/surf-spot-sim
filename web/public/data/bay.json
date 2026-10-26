@@ -1,1 +1,1 @@
-{"x0": -4000.0, "y0": -8000.0, "dx": 25.0, "nx": 441, "ny": 381, "scale": 0.1, "z0": 2.0, "note": "int16 little-endian, row-major from south-west, value*scale = m above LAT"}
+{"x0": -30000.0, "y0": -16000.0, "dx": 50.0, "nx": 781, "ny": 401, "scale": 0.1, "z0": 2.0, "note": "int16 little-endian, row-major from south-west, value*scale = m above LAT"}

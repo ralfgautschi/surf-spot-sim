@@ -3,7 +3,8 @@
 Writes:
   web/public/data/spots.json        spot geometry + reference point
   web/public/data/transfer/<id>.json ray maps per period
-  web/public/data/bay.json + bay.bin cropped bathymetry (int16 decimetres above LAT) for the bay view
+  web/public/data/bay.json + bay.bin whole grid, smoothed and subsampled to 50 m (int16 decimetres above LAT),
+                                    for forward ray tracing and drawing in the bay view
 """
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ from transfer import PERIODS, REF_DEPTH, ray_map, reference_point
 
 OUT = ROOT / "web" / "public" / "data"
 RAY_SMOOTHING = 75.0  # m, Gaussian smoothing of the seabed before tracing
-BAY = dict(xmin=-4000, xmax=7000, ymin=-8000, ymax=1500)
+BAY_STRIDE = 2  # 25 m grid -> 50 m
 
 
 def _r(a, nd=1):
@@ -45,13 +46,12 @@ def build_transfer(grid: Grid, spots: dict) -> None:
 
 
 def build_bay(grid: Grid) -> None:
-    ix = (grid.x >= BAY["xmin"]) & (grid.x <= BAY["xmax"])
-    iy = (grid.y >= BAY["ymin"]) & (grid.y <= BAY["ymax"])
-    z = grid.z[np.ix_(iy, ix)]
+    sm = grid.smoothed(RAY_SMOOTHING)
+    z = sm.z[::BAY_STRIDE, ::BAY_STRIDE]
     q = np.clip(np.round(z * 10), -32000, 32000).astype("<i2")
     (OUT / "bay.bin").write_bytes(q.tobytes())
-    meta = {"x0": float(grid.x[ix][0]), "y0": float(grid.y[iy][0]), "dx": grid.dx,
-            "nx": int(ix.sum()), "ny": int(iy.sum()), "scale": 0.1, "z0": grid.z0,
+    meta = {"x0": float(grid.x[0]), "y0": float(grid.y[0]), "dx": grid.dx * BAY_STRIDE,
+            "nx": int(z.shape[1]), "ny": int(z.shape[0]), "scale": 0.1, "z0": grid.z0,
             "note": "int16 little-endian, row-major from south-west, value*scale = m above LAT"}
     (OUT / "bay.json").write_text(json.dumps(meta))
 

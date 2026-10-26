@@ -53,10 +53,19 @@ def spread_deg(T: float, kind: str = "swell") -> float:
     return float(np.clip(30.0 - 1.2 * T, 10.0, 25.0))
 
 
+def cos2s_exponent(sigma_deg: float) -> float:
+    """Spreading exponent s of a cos^2s(Δ/2) distribution with directional spread sigma (Kuik et al.)."""
+    return max(2.0 / np.radians(sigma_deg) ** 2 - 1.0, 0.5)
+
+
 def directional(theta, mean, sigma):
-    """Wrapped-normal directional distribution in rad^-1."""
-    d = (np.asarray(theta) - mean + 180) % 360 - 180
-    return np.exp(-0.5 * (d / sigma) ** 2) / (np.radians(sigma) * np.sqrt(2 * np.pi))
+    """cos^2s(Δ/2) directional distribution in rad^-1 (heavier tails than a Gaussian, as real swell)."""
+    from scipy.special import gammaln
+
+    s = cos2s_exponent(sigma)
+    d = np.radians((np.asarray(theta) - mean + 180) % 360 - 180)
+    norm = np.exp(gammaln(s + 1) - gammaln(s + 0.5)) / (2 * np.sqrt(np.pi))
+    return norm * np.cos(d / 2) ** (2 * s)
 
 
 def apply(rm: dict, mean_dir: float, sigma: float) -> tuple[float, float]:
