@@ -1,0 +1,8 @@
+{
+  "_note": "Provisional pins from the bathymetry; confirm on the setup map. Take-off points sit ~100 m off the shoreline.",
+  "spots": [
+    {"id": "fortaleza",   "name": "Fortaleza",   "takeoff": {"lat": 37.0833, "lon": -8.7306}},
+    {"id": "chico-times", "name": "Chico Times", "takeoff": {"lat": 37.0848, "lon": -8.7250}},
+    {"id": "rocha-negra", "name": "Rocha Negra", "takeoff": {"lat": 37.0829, "lon": -8.7137}}
+  ]
+}
